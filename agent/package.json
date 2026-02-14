@@ -12,9 +12,13 @@
   },
   "devDependencies": {
     "@types/frida-gum": "^19.0.0",
-    "@types/node": "^18.14.0"
+    "@types/node": "^18.14.0",
+    "frida-compile": "^19.0.4"
   },
   "dependencies": {
     "frida-objc-bridge": "^8.0.5"
-  }
+  },
+  "trustedDependencies": [
+    "frida"
+  ]
 }

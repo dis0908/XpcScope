@@ -10,14 +10,25 @@ Yet another xpc sniffer
 git clone --recurse-submodules https://github.com/ChiChou/XpcScope.git
 ```
 
+### Build Frida Agent Script
+
+This step requires node.js to be installed.
+
 ```shell
-python3 -m venv .venv                                 # initialize virtual environment
-source .venv/bin/activate                             # active venv shell
-pip install -e .                                      # install all dependencies
-cd agent && npm install && npm run build              # install frida agent dependencies and build the agent
+cd agent
+npm install
+npm run build
 ```
 
-Now I addded a `./setup.sh` for convenience, you can simply run it to do all the above steps.
+However, we provide a pre-built `agent/_agent.js` for your convenience, please check out the attachment in the releases page.
+
+### Install the Python package to a virtual environment
+
+```shell
+python3 -m venv .venv               # initialize virtual environment
+source .venv/bin/activate           # active venv shell
+pip install -e .                    # install all dependencies
+```
 
 ## Run
 
@@ -41,14 +52,14 @@ uv run xpcscope target | wireshark -k -i -
 
 The dissector registers the following fields for filtering:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `xpc.name` | string | XPC service name |
-| `xpc.dir` | string | `>` (sent) or `<` (received) |
-| `xpc.event` | string | `sent` or `received` |
-| `xpc.peer` | int | Remote peer PID |
-| `xpc.msgtype` | string | `dictionary`, `nsxpc`, etc. |
-| `xpc.sel` | string | NSXPC selector (NSXPC only) |
+| Field         | Type   | Description                  |
+| ------------- | ------ | ---------------------------- |
+| `xpc.name`    | string | XPC service name             |
+| `xpc.dir`     | string | `>` (sent) or `<` (received) |
+| `xpc.event`   | string | `sent` or `received`         |
+| `xpc.peer`    | int    | Remote peer PID              |
+| `xpc.msgtype` | string | `dictionary`, `nsxpc`, etc.  |
+| `xpc.sel`     | string | NSXPC selector (NSXPC only)  |
 
 Examples:
 

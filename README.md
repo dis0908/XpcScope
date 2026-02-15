@@ -20,7 +20,8 @@ npm install
 npm run build
 ```
 
-However, we provide a pre-built `agent/_agent.js` for your convenience, please check out the attachment in the releases page.
+However, we provide a pre-built `agent/_agent.js` for your convenience, please check out the attachment in the
+[releases page](https://github.com/ChiChou/XpcScope/releases).
 
 ### Install the Python package to a virtual environment
 

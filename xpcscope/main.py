@@ -5,9 +5,10 @@ import json
 import os
 import shutil
 import signal
+import subprocess
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import BinaryIO, Callable
 
 import frida
 
@@ -35,7 +36,7 @@ def deploy_plugin():
     shutil.copy(PROJECT_ROOT / "lua" / "json" / "json.lua", json_dir / "json.lua")
 
 
-def tool(get_target: Callable[[], frida.core.Session]):
+def tool(get_target: Callable[[], frida.core.Session], output: BinaryIO = sys.stdout.buffer):
     session = get_target()
 
     source = PROJECT_ROOT / "agent" / "_agent.js"
@@ -46,7 +47,7 @@ def tool(get_target: Callable[[], frida.core.Session]):
         sys.stderr.write(f"frida agent {source} not found\n")
         return
 
-    pcap = Pcap()
+    pcap = Pcap(output)
 
     def on_message(message: dict, data: bytes):
         if message["type"] == "send":
@@ -108,8 +109,8 @@ def get_device(args) -> frida.core.Device:
 
 def cli():
     parser = argparse.ArgumentParser(
-        description="XPC sniffer powered by Frida. Output PCAP to stdout.",
-        usage="xpcscope [options] [target] | wireshark -k -i -",
+        description="XPC sniffer powered by Frida. Launches Wireshark automatically.",
+        usage="xpcscope [options] target",
     )
 
     # Device selection (mutually exclusive)
@@ -159,6 +160,19 @@ def cli():
 
     deploy_plugin()
 
+    # Launch Wireshark, feeding PCAP into its stdin
+    wireshark = subprocess.Popen(
+        ["wireshark", "-k", "-i", "-"],
+        stdin=subprocess.PIPE,
+    )
+
+    def run_tool(get_target_fn):
+        try:
+            tool(get_target_fn, wireshark.stdin)
+        finally:
+            wireshark.stdin.close()
+            wireshark.wait()
+
     # Legacy script mode
     if args.script is not None:
         name = args.script
@@ -169,7 +183,7 @@ def cli():
             sys.stderr.write(f"Cannot import module '{name}'\n")
             sys.exit(1)
         try:
-            tool(getattr(loader, "attach"))
+            run_tool(getattr(loader, "attach"))
         except AttributeError:
             sys.stderr.write(f"Module '{name}' does not have an 'attach' function\n")
             sys.exit(1)
@@ -196,7 +210,7 @@ def cli():
         else:
             return device.attach(target_name)
 
-    tool(attach)
+    run_tool(attach)
 
 
 if __name__ == "__main__":

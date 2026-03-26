@@ -34,35 +34,36 @@ pip install -e .                    # install all dependencies
 ## Run
 
 XpcScope uses the same command-line flags as Frida for device and process selection.
+Wireshark is launched automatically — no need to pipe.
 
 ### Attach by process name
 
 ```shell
-xpcscope Finder | wireshark -k -i -
+xpcscope Finder
 ```
 
 ### Attach by PID
 
 ```shell
-xpcscope -p 1234 | wireshark -k -i -
+xpcscope -p 1234
 ```
 
 ### Spawn a process and attach
 
 ```shell
-xpcscope -f /usr/bin/sample_app | wireshark -k -i -
+xpcscope -f /usr/bin/sample_app
 ```
 
 ### Attach on a USB device (e.g. iOS)
 
 ```shell
-xpcscope -U SpringBoard | wireshark -k -i -
+xpcscope -U SpringBoard
 ```
 
 ### Attach on a remote device
 
 ```shell
-xpcscope -H 192.168.1.100 Safari | wireshark -k -i -
+xpcscope -H 192.168.1.100 Safari
 ```
 
 ### Device and target options
@@ -85,7 +86,7 @@ The process name can also be passed as a positional argument (equivalent to `-n`
 If you have [uv](https://docs.astral.sh/uv/):
 
 ```shell
-uv run xpcscope Finder | wireshark -k -i -
+uv run xpcscope Finder
 ```
 
 ## Wireshark Display Filters

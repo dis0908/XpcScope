@@ -33,20 +33,59 @@ pip install -e .                    # install all dependencies
 
 ## Run
 
-I am too lazy to adapt the cli options from frida, so simply write your attach logic in `target.py` under current directory.
+XpcScope uses the same command-line flags as Frida for device and process selection.
 
-An example script is provided in `target.example.py`
-
-With venv activated:
+### Attach by process name
 
 ```shell
-xpcscope target | wireshark -k -i -
+xpcscope Finder | wireshark -k -i -
 ```
 
-Or if you have [uv](https://docs.astral.sh/uv/)
+### Attach by PID
 
 ```shell
-uv run xpcscope target | wireshark -k -i -
+xpcscope -p 1234 | wireshark -k -i -
+```
+
+### Spawn a process and attach
+
+```shell
+xpcscope -f /usr/bin/sample_app | wireshark -k -i -
+```
+
+### Attach on a USB device (e.g. iOS)
+
+```shell
+xpcscope -U SpringBoard | wireshark -k -i -
+```
+
+### Attach on a remote device
+
+```shell
+xpcscope -H 192.168.1.100 Safari | wireshark -k -i -
+```
+
+### Device and target options
+
+| Flag | Long | Description |
+| ---- | -------------- | ---------------------------------------- |
+| `-U` | `--usb` | Connect to USB device |
+| `-R` | `--remote` | Connect to remote frida-server |
+| `-D` | `--device ID` | Connect to device with the given ID |
+| `-H` | `--host HOST` | Connect to remote frida-server on HOST |
+| `-n` | `--attach-name NAME` | Attach to process by name |
+| `-p` | `--attach-pid PID` | Attach to process by PID |
+| `-f` | `--spawn PROGRAM` | Spawn a process and attach |
+| `-s` | `--script MODULE` | Legacy: load a Python module with an `attach()` function |
+
+The process name can also be passed as a positional argument (equivalent to `-n`).
+
+### Using with uv
+
+If you have [uv](https://docs.astral.sh/uv/):
+
+```shell
+uv run xpcscope Finder | wireshark -k -i -
 ```
 
 ## Wireshark Display Filters

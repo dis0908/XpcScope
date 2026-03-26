@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import json
 import os
 import shutil
@@ -91,29 +92,111 @@ def tool(get_target: Callable[[], frida.core.Session]):
         session.detach()
 
 
+def get_device(args) -> frida.core.Device:
+    if args.usb:
+        return frida.get_usb_device()
+    elif args.remote:
+        return frida.get_remote_device()
+    elif args.device is not None:
+        return frida.get_device(args.device)
+    elif args.host is not None:
+        mgr = frida.get_device_manager()
+        return mgr.add_remote_device(args.host)
+    else:
+        return frida.get_local_device()
+
+
 def cli():
+    parser = argparse.ArgumentParser(
+        description="XPC sniffer powered by Frida. Output PCAP to stdout.",
+        usage="xpcscope [options] [target] | wireshark -k -i -",
+    )
+
+    # Device selection (mutually exclusive)
+    device_group = parser.add_mutually_exclusive_group()
+    device_group.add_argument(
+        "-U", "--usb", action="store_true", help="connect to USB device"
+    )
+    device_group.add_argument(
+        "-R", "--remote", action="store_true", help="connect to remote frida-server"
+    )
+    device_group.add_argument(
+        "-D", "--device", metavar="ID", help="connect to device with the given ID"
+    )
+    device_group.add_argument(
+        "-H", "--host", metavar="HOST", help="connect to remote frida-server on HOST"
+    )
+
+    # Target selection
+    target_group = parser.add_mutually_exclusive_group()
+    target_group.add_argument(
+        "-p", "--attach-pid", metavar="PID", type=int, help="attach to process by PID"
+    )
+    target_group.add_argument(
+        "-n",
+        "--attach-name",
+        metavar="NAME",
+        help="attach to process by name",
+    )
+    target_group.add_argument(
+        "-f", "--spawn", metavar="PROGRAM", help="spawn a process and attach"
+    )
+    target_group.add_argument(
+        "-s",
+        "--script",
+        metavar="MODULE",
+        help="legacy mode: load a Python module with an attach() function",
+    )
+
+    # Positional: process name (alternative to -n)
+    parser.add_argument(
+        "target",
+        nargs="?",
+        help="process name to attach to (same as -n)",
+    )
+
+    args = parser.parse_args()
+
     deploy_plugin()
 
-    if len(sys.argv) == 2:
-        name = sys.argv[1]
-    else:
-        name = "target"
-
-    import os
-
-    sys.path.append(os.path.dirname(name))
-    try:
-        loader = __import__(os.path.basename(name))
-    except ImportError:
-        sys.stderr.write("You need to put target.py in current directory to attach\n")
-        sys.exit(1)
-
-    try:
-        if not tool(getattr(loader, "attach")):
+    # Legacy script mode
+    if args.script is not None:
+        name = args.script
+        sys.path.append(os.path.dirname(os.path.abspath(name)))
+        try:
+            loader = __import__(os.path.basename(name))
+        except ImportError:
+            sys.stderr.write(f"Cannot import module '{name}'\n")
             sys.exit(1)
-    except AttributeError:
-        sys.stderr.write(f"Module {name} does not have an 'attach' function\n")
+        try:
+            tool(getattr(loader, "attach"))
+        except AttributeError:
+            sys.stderr.write(f"Module '{name}' does not have an 'attach' function\n")
+            sys.exit(1)
+        return
+
+    # Determine target
+    target_name = args.attach_name or args.target
+    target_pid = args.attach_pid
+    spawn_target = args.spawn
+
+    if target_name is None and target_pid is None and spawn_target is None:
+        parser.print_help(sys.stderr)
         sys.exit(1)
+
+    def attach() -> frida.core.Session:
+        device = get_device(args)
+        if spawn_target is not None:
+            pid = device.spawn([spawn_target])
+            session = device.attach(pid)
+            device.resume(pid)
+            return session
+        elif target_pid is not None:
+            return device.attach(target_pid)
+        else:
+            return device.attach(target_name)
+
+    tool(attach)
 
 
 if __name__ == "__main__":

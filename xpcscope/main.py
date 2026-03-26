@@ -8,7 +8,7 @@ import signal
 import subprocess
 import sys
 from pathlib import Path
-from typing import BinaryIO, Callable
+from typing import Callable
 
 import frida
 
@@ -38,7 +38,7 @@ def deploy_plugin():
         shutil.copy(json_src, json_dst / "json.lua")
 
 
-def tool(get_target: Callable[[], frida.core.Session], output: BinaryIO = sys.stdout.buffer):
+def tool(get_target: Callable[[], frida.core.Session]):
     session = get_target()
 
     source = PACKAGE_DIR / "agent" / "_agent.js"
@@ -49,7 +49,12 @@ def tool(get_target: Callable[[], frida.core.Session], output: BinaryIO = sys.st
         sys.stderr.write(f"frida agent {source} not found\n")
         return
 
-    pcap = Pcap(output)
+    # Launch Wireshark only after the session and script are ready
+    wireshark = subprocess.Popen(
+        ["wireshark", "-k", "-i", "-"],
+        stdin=subprocess.PIPE,
+    )
+    pcap = Pcap(wireshark.stdin)
 
     def on_message(message: dict, data: bytes):
         if message["type"] == "send":
@@ -83,8 +88,6 @@ def tool(get_target: Callable[[], frida.core.Session], output: BinaryIO = sys.st
     script.load()
     pcap.write_header()
     script.exports_sync.start()
-    # name, pid = script.exports_sync.name_and_pid()
-    # sys.stderr.write(f'attached to {name}({pid})\n')
 
     try:
         input()
@@ -93,6 +96,8 @@ def tool(get_target: Callable[[], frida.core.Session], output: BinaryIO = sys.st
     finally:
         script.unload()
         session.detach()
+        wireshark.stdin.close()
+        wireshark.wait()
 
 
 def get_device(args) -> frida.core.Device:
@@ -162,19 +167,6 @@ def cli():
 
     deploy_plugin()
 
-    # Launch Wireshark, feeding PCAP into its stdin
-    wireshark = subprocess.Popen(
-        ["wireshark", "-k", "-i", "-"],
-        stdin=subprocess.PIPE,
-    )
-
-    def run_tool(get_target_fn):
-        try:
-            tool(get_target_fn, wireshark.stdin)
-        finally:
-            wireshark.stdin.close()
-            wireshark.wait()
-
     # Legacy script mode
     if args.script is not None:
         name = args.script
@@ -185,7 +177,7 @@ def cli():
             sys.stderr.write(f"Cannot import module '{name}'\n")
             sys.exit(1)
         try:
-            run_tool(getattr(loader, "attach"))
+            tool(getattr(loader, "attach"))
         except AttributeError:
             sys.stderr.write(f"Module '{name}' does not have an 'attach' function\n")
             sys.exit(1)
@@ -212,7 +204,7 @@ def cli():
         else:
             return device.attach(target_name)
 
-    run_tool(attach)
+    tool(attach)
 
 
 if __name__ == "__main__":

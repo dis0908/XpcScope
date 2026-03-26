@@ -17,3 +17,6 @@ xpcscope = "xpcscope.main:cli"
 
 [tool.setuptools.packages.find]
 exclude = ["agent*", "tests*", "examples*"]
+
+[tool.setuptools.package-data]
+xpcscope = ["lua/*.lua", "lua/**/*.lua", "agent/*.js"]

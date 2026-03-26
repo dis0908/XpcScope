@@ -14,12 +14,11 @@ import frida
 
 from xpcscope.pcap import Pcap
 
-PROJECT_ROOT = Path(__file__).parent.parent
+PACKAGE_DIR = Path(__file__).parent
 
 
 def deploy_plugin():
     # install dissector to Wireshark
-    # if windows
     def location():
         if sys.platform == "win32":
             return Path(os.environ["APPDATA"]) / "Wireshark" / "plugins"
@@ -29,17 +28,20 @@ def deploy_plugin():
     if not plugins.exists():
         plugins.mkdir(parents=True, exist_ok=True)
 
-    shutil.copy(PROJECT_ROOT / "lua" / "xpc.lua", plugins / "xpc.lua")
-    json_dir = plugins / "json"
-    if not json_dir.exists():
-        json_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy(PROJECT_ROOT / "lua" / "json" / "json.lua", json_dir / "json.lua")
+    lua_dir = PACKAGE_DIR / "lua"
+    shutil.copy(lua_dir / "xpc.lua", plugins / "xpc.lua")
+    json_src = lua_dir / "json" / "json.lua"
+    if json_src.exists():
+        json_dst = plugins / "json"
+        if not json_dst.exists():
+            json_dst.mkdir(parents=True, exist_ok=True)
+        shutil.copy(json_src, json_dst / "json.lua")
 
 
 def tool(get_target: Callable[[], frida.core.Session], output: BinaryIO = sys.stdout.buffer):
     session = get_target()
 
-    source = PROJECT_ROOT / "agent" / "_agent.js"
+    source = PACKAGE_DIR / "agent" / "_agent.js"
     try:
         with source.open("r", encoding="utf8") as f:
             script = session.create_script(f.read())

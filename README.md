@@ -20,15 +20,15 @@ npm install
 npm run build
 ```
 
-However, we provide a pre-built `agent/_agent.js` for your convenience, please check out the attachment in the
-[releases page](https://github.com/ChiChou/XpcScope/releases).
+However, we provide a pre-built `_agent.js` for your convenience, please check out the attachment in the
+[releases page](https://github.com/ChiChou/XpcScope/releases). Place it at `xpcscope/agent/_agent.js`.
 
 ### Install the Python package to a virtual environment
 
 ```shell
 python3 -m venv .venv               # initialize virtual environment
 source .venv/bin/activate           # active venv shell
-pip install -e .                    # install all dependencies
+pip install .                       # install all dependencies
 ```
 
 ## Run

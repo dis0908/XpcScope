@@ -11,17 +11,6 @@ git clone --recurse-submodules https://github.com/ChiChou/XpcScope.git
 cd XpcScope
 ```
 
-### Build Frida Agent Script
-
-This step requires Node.js. A pre-built `_agent.js` is also available on the
-[releases page](https://github.com/ChiChou/XpcScope/releases) — place it at `xpcscope/agent/_agent.js`.
-
-```shell
-cd agent
-npm install
-npm run build
-```
-
 ### Install
 
 With [uv](https://docs.astral.sh/uv/) (recommended):
@@ -31,6 +20,10 @@ uv run xpcscope -U SpringBoard
 ```
 
 Dependencies are resolved automatically on first run.
+
+The Frida agent (`_agent.js`) is built automatically during install. If Node.js
+is available, it compiles from source; otherwise, a pre-built binary is
+downloaded from the [matching GitHub release](https://github.com/ChiChou/XpcScope/releases).
 
 <details>
 <summary>With pip</summary>

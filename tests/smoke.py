@@ -10,11 +10,9 @@ Usage:
 """
 
 import argparse
-import json
 import signal
 import sys
 import threading
-import time
 from collections import Counter
 from pathlib import Path
 
@@ -27,15 +25,23 @@ def main():
     parser = argparse.ArgumentParser(description="Headless XpcScope smoke test")
     device_group = parser.add_mutually_exclusive_group()
     device_group.add_argument("-U", "--usb", action="store_true", help="USB device")
-    device_group.add_argument("-R", "--remote", action="store_true", help="remote frida-server")
+    device_group.add_argument(
+        "-R", "--remote", action="store_true", help="remote frida-server"
+    )
     device_group.add_argument("-D", "--device", metavar="ID", help="device ID")
     device_group.add_argument("-H", "--host", metavar="HOST", help="remote host")
 
     target_group = parser.add_mutually_exclusive_group(required=True)
-    target_group.add_argument("-p", "--attach-pid", metavar="PID", type=int, help="attach by PID")
-    target_group.add_argument("-n", "--attach-name", metavar="NAME", help="attach by name")
+    target_group.add_argument(
+        "-p", "--attach-pid", metavar="PID", type=int, help="attach by PID"
+    )
+    target_group.add_argument(
+        "-n", "--attach-name", metavar="NAME", help="attach by name"
+    )
 
-    parser.add_argument("-t", "--timeout", type=float, default=5, help="seconds to collect (default: 5)")
+    parser.add_argument(
+        "-t", "--timeout", type=float, default=5, help="seconds to collect (default: 5)"
+    )
     args = parser.parse_args()
 
     # connect
@@ -124,17 +130,17 @@ def main():
             print(f"    {label}: {c}")
 
         sels = Counter(m.get("message", {}).get("sel", "?") for m in nsxpc_msgs)
-        print(f"\n    top selectors:")
+        print("\n    top selectors:")
         for sel, c in sels.most_common(10):
             print(f"      {c:4d}  {sel}")
 
         services = Counter(m.get("name", "") for m in nsxpc_msgs)
         if any(s for s in services):
-            print(f"\n    services:")
+            print("\n    services:")
             for svc, c in services.most_common(10):
                 print(f"      {c:4d}  {svc or '(anonymous)'}")
 
-        print(f"\n    sample messages:")
+        print("\n    sample messages:")
         for m in nsxpc_msgs[:5]:
             desc = m.get("message", {}).get("description", "")
             d = m.get("dir", "?")

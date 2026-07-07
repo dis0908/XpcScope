@@ -8,11 +8,13 @@ Yet another xpc sniffer
 
 ```shell
 git clone --recurse-submodules https://github.com/ChiChou/XpcScope.git
+cd XpcScope
 ```
 
 ### Build Frida Agent Script
 
-This step requires node.js to be installed.
+This step requires Node.js. A pre-built `_agent.js` is also available on the
+[releases page](https://github.com/ChiChou/XpcScope/releases) — place it at `xpcscope/agent/_agent.js`.
 
 ```shell
 cd agent
@@ -20,53 +22,41 @@ npm install
 npm run build
 ```
 
-However, we provide a pre-built `_agent.js` for your convenience, please check out the attachment in the
-[releases page](https://github.com/ChiChou/XpcScope/releases). Place it at `xpcscope/agent/_agent.js`.
+### Install
 
-### Install the Python package to a virtual environment
+With [uv](https://docs.astral.sh/uv/) (recommended):
 
 ```shell
-python3 -m venv .venv               # initialize virtual environment
-source .venv/bin/activate           # active venv shell
-pip install .                       # install all dependencies
+uv run xpcscope -U SpringBoard
 ```
 
-## Run
+Dependencies are resolved automatically on first run.
+
+<details>
+<summary>With pip</summary>
+
+```shell
+python3 -m venv .venv
+source .venv/bin/activate
+pip install .
+```
+
+</details>
+
+## Usage
 
 XpcScope uses the same command-line flags as Frida for device and process selection.
-Wireshark is launched automatically — no need to pipe.
-
-### Attach by process name
+Wireshark is launched automatically.
 
 ```shell
-xpcscope Finder
+xpcscope Finder                        # attach by name (local)
+xpcscope -p 1234                       # attach by PID
+xpcscope -f /usr/bin/sample_app        # spawn and attach
+xpcscope -U SpringBoard                # USB device (iOS)
+xpcscope -H 192.168.1.100 Safari       # remote frida-server
 ```
 
-### Attach by PID
-
-```shell
-xpcscope -p 1234
-```
-
-### Spawn a process and attach
-
-```shell
-xpcscope -f /usr/bin/sample_app
-```
-
-### Attach on a USB device (e.g. iOS)
-
-```shell
-xpcscope -U SpringBoard
-```
-
-### Attach on a remote device
-
-```shell
-xpcscope -H 192.168.1.100 Safari
-```
-
-### Device and target options
+### Options
 
 | Flag | Long | Description |
 | ---- | -------------- | ---------------------------------------- |
@@ -77,16 +67,16 @@ xpcscope -H 192.168.1.100 Safari
 | `-n` | `--attach-name NAME` | Attach to process by name |
 | `-p` | `--attach-pid PID` | Attach to process by PID |
 | `-f` | `--spawn PROGRAM` | Spawn a process and attach |
-| `-s` | `--script MODULE` | Legacy: load a Python module with an `attach()` function |
+| `-s` | `--script MODULE` | Load a Python module with an `attach()` function |
 
 The process name can also be passed as a positional argument (equivalent to `-n`).
 
-### Using with uv
+### Headless smoke test
 
-If you have [uv](https://docs.astral.sh/uv/):
+Run without Wireshark to verify hooks are working:
 
 ```shell
-uv run xpcscope Finder
+uv run python tests/smoke.py -U -n SpringBoard -t 10
 ```
 
 ## Wireshark Display Filters

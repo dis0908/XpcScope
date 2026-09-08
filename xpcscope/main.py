@@ -38,8 +38,26 @@ def deploy_plugin():
         shutil.copy(json_src, json_dst / "json.lua")
 
 
+def attach_or_exit(get_target: Callable[[], frida.core.Session]) -> frida.core.Session:
+    try:
+        return get_target()
+    except frida.ProcessNotFoundError as e:
+        sys.stderr.write(f"No such process: {e}\n")
+    except frida.PermissionDeniedError as e:
+        sys.stderr.write(f"Permission denied: {e}\n")
+        sys.stderr.write("Retry with sudo, or pick a process owned by you.\n")
+    except frida.ProcessNotRespondingError as e:
+        sys.stderr.write(f"Could not inject into the target: {e}\n")
+        sys.stderr.write(
+            "The process is alive, but the Frida agent died while starting up inside\n"
+            "it. That usually means a sandbox is blocking the agent.\n"
+            "Confirm with:  log stream --predicate 'eventMessage CONTAINS \"deny(1) syscall-unix\"'\n"
+        )
+    sys.exit(1)
+
+
 def tool(get_target: Callable[[], frida.core.Session]):
-    session = get_target()
+    session = attach_or_exit(get_target)
 
     source = PACKAGE_DIR / "agent" / "_agent.js"
     try:
@@ -51,7 +69,7 @@ def tool(get_target: Callable[[], frida.core.Session]):
 
     # Launch Wireshark only after the session and script are ready
     wireshark = subprocess.Popen(
-        ["wireshark", "-k", "-i", "-"],
+        ["/Applications/Wireshark.app/Contents/MacOS/Wireshark", "-k", "-i", "-"],
         stdin=subprocess.PIPE,
     )
     pcap = Pcap(wireshark.stdin)
